@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../CSS/bootstrap.min.css">
+    <link rel="stylesheet" href="../CSS/sweetalert2.min.css">
+    <link rel="stylesheet" href="../CSS/common.css">
+    <script src="../CommonJS/bootstrap.bundle.min.js"></script>
+    <script src="../CommonJS/sweetalert2.min.js"></script>
+    <script src="../CommonJS/common.js"></script>
+</head>
+<body>
+    <div id="app1">
+        <label>員編查詢</label>
+        <input type="text" v-model="filterKey" :disabled="validated"/>
+        <br />
+        <br />
+        <table class="table">
+            <thead>
+                <th>員編</th>
+                <th>姓名</th>
+                <th>分機</th>
+                <th>功能 
+                    <Mybutton :btnname="'＋'" class="btn btn-primary" @do-click="Insert"></Mybutton>
+                </th>
+            </thead>
+            <tbody>
+                <tr v-for="(item, i) in filterData">
+                    <td>{{item.EmpNo}}</td>
+                    <td>{{item.EmpName}}</td>
+                    <td>{{item.Ext}}</td>
+                    <td>
+                        <Mybutton :btnname="'更新'" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#staticModal" @do-click="Update(item,i)" :disabled="validated"></Mybutton>
+                        <Mybutton :btnname="'刪除'" class="btn btn-danger" @do-click="Remove(item)" :disabled="validated"></Mybutton>
+                    </td>
+                </tr>
+                <tr :class="{'visually-hidden':!validated}">
+                    <td>
+                        <input type="text" v-model="inputEmpNo"/>
+                    </td>
+                    <td>
+                        <input type="text" v-model="inputEmpName"/>
+                    </td>
+                    <td>
+                        <input type="text" v-model="inputExt"/>
+                    </td>
+                    <td>
+                        <Mybutton :btnname="'儲存'" class="btn btn-success" @do-click="Save(false)"></Mybutton>
+                        <Mybutton :btnname="'取消'" class="btn btn-light" @do-click="Cancel"></Mybutton>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <modal id="staticModal">
+            <template #header>
+                <h1 class="modal-title fs-5" id="staticBackdropLabel">資料修改</h1>
+            </template>
+            <template #body>
+                <div hidden>
+                    Sn：<input type="text" v-model="sn"/>
+                </div>
+                <div>
+                    員編：<input type="text" v-model="inputEmpNo"/>
+                </div>
+                <div>
+                    姓名：<input type="text" v-model="inputEmpName"/>
+                </div>
+                <div>
+                    分機：<input type="text" v-model="inputExt"/>
+                </div>
+            </template>
+            <template #footer>
+                <Mybutton :btnname="'取消'" class="btn btn-light" data-bs-dismiss="modal" @do-click="Cancel"></Mybutton>
+                <Mybutton :btnname="'儲存'" class="btn btn-success" @do-click="Save(true)"></Mybutton>
+            </template>
+        </modal>
+    </div>
+    <script type="module">
+        import {createApp, ref, reactive, computed, watch} from '../CommonJS/vue.js'
+        import Modal from '../components/modal.js'
+        import Mybutton from '../components/mybutton.js'
+
+        const app = {
+            components:{
+                Modal,
+                Mybutton,
+            },
+            setup(){
+                const list = reactive([
+                    {
+                        EmpNo: 'EH9048',
+                        EmpName: '郭○怡',
+                        Ext: 1627,
+                        
+                    },
+                    {
+                        EmpNo: 'EQ0846',
+                        EmpName: '李○哲',
+                        Ext: 1647,
+                    },
+                ])
+                const sn = ref('')
+                const inputEmpNo = ref('')
+                const inputEmpName = ref('')
+                const inputExt = ref('')
+                const filterKey = ref('')
+                const validated = ref(false)
+                let Item = {}
+
+                const Remove = (item) => {
+                    Item = item
+                    SweetAlert('確定刪除？', true, '否', '是', splice)                    
+                }
+                const splice = () =>{
+                    const i = list.map(row => row.EmpNo).indexOf(Item.EmpNo)
+                    list.splice(i, 1)
+                }
+
+                const Insert = () => {
+                    validated.value = true
+                }
+
+                const Cancel = () => {
+                    validated.value = false
+                    ClearInput()
+                }
+                const ClearInput = () =>{
+                    sn.value = inputEmpNo.value = inputEmpName.value = inputExt.value = ''
+                }
+
+                const Save = (IsEdit) => {
+                    const item = {
+                        EmpNo: `${inputEmpNo.value}`,
+                        EmpName: `${inputEmpName.value}`,
+                        Ext: `${inputExt.value}`,
+                    }
+                    if(!!!item.EmpNo){
+                        SweetAlert('員編不可為空', false, null, '確定')
+                        return
+                    }
+
+                    if(IsEdit){
+                        list[sn.value].EmpNo = `${inputEmpNo.value}`
+                        list[sn.value].EmpName = `${inputEmpName.value}`
+                        list[sn.value].Ext = `${inputExt.value}`
+
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('staticModal'))
+                        modal.hide()
+                    }
+                    else{
+                        list.push(item)
+                    }
+                    
+                    validated.value = false
+                    ClearInput()
+                }
+
+                const Update = (item) => {
+                    const i = list.map(row => row.EmpNo).indexOf(item.EmpNo)
+                    sn.value = i
+                    inputEmpNo.value = item.EmpNo
+                    inputEmpName.value = item.EmpName
+                    inputExt.value = item.Ext
+                }
+
+                const filterData = computed(() => {
+                    if(filterKey){
+                        return list.filter((row) => {
+                            return row.EmpNo.toLowerCase().includes(filterKey.value.toLowerCase())
+                      })
+                    }                    
+                })
+
+                return {
+                    validated,
+                    list,
+                    sn,
+                    inputEmpNo,
+                    inputEmpName,
+                    inputExt,
+                    filterKey,
+                    filterData,              
+                    Save,
+                    Remove,
+                    Insert,
+                    Cancel,
+                    Update,
+                }
+            }
+        }
+        createApp(app).mount('#app1')
+    </script>
+</body>
+</html>
